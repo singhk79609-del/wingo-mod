@@ -210,7 +210,6 @@
             font-family: var(--font-display);
         }
 
-        /* Popups Variants */
         .popup-win .glow { background: radial-gradient(circle, #00ff66, transparent 60%); }
         .popup-win .title { color: #00ff66; text-shadow: 0 0 20px rgba(0,255,102,0.5); }
 
@@ -220,12 +219,10 @@
         .popup-jackpot .glow { background: radial-gradient(circle, #ffd700, transparent 60%); }
         .popup-jackpot .title { color: #ffd700; text-shadow: 0 0 25px rgba(255,215,0,0.7); }
 
-        /* Confetti Overlay */
         .confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 1000000; overflow: hidden; }
         .confetti-piece { position: absolute; width: 8px; height: 14px; top: -20px; animation: confettiFall linear forwards; }
         @keyframes confettiFall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
 
-        /* Floating Mini Widget */
         #drag{position:fixed;top:10%;left:10px;z-index:99999;display:none;flex-direction:column;gap:10px;touch-action:none}
         .main-float{position:relative;width:210px;border-radius:20px;background:linear-gradient(145deg,rgba(30,10,40,.85),rgba(10,5,20,.85));backdrop-filter:blur(18px);border:1px solid rgba(255,0,100,.3);box-shadow:0 0 25px rgba(255,0,100,.3);overflow:hidden}
         .inner-float{position:relative;z-index:5;padding:12px;text-align:center;color:#fff}
@@ -486,21 +483,59 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeAllPopups();
 });
 
+// Synced Key Authentication with Admin Panel & Lifetime Master Key
 function checkAuth() {
     const key = document.getElementById('passInput').value.trim();
     const err = document.getElementById('err');
+    
+    if (!key) {
+        err.style.color = "#ff0055";
+        err.innerText = "⚠️ PLEASE ENTER A KEY!";
+        return;
+    }
+
+    // Master Lifetime Admin Key
     if (key === "anmol2009") {
-        err.style.color = "#00ff66";
-        err.innerText = "️ ACCESS GRANTED";
-        setTimeout(() => {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('ui').style.display = 'flex';
-            startEngine();
-        }, 500);
+        grantAccess();
+        return;
+    }
+
+    // Check against keys generated from Admin Panel
+    let adminKeys = JSON.parse(localStorage.getItem('admin_generated_keys')) || {};
+    
+    if (adminKeys.hasOwnProperty(key)) {
+        let keyData = adminKeys[key];
+        let durationDays = keyData.days; // 0 = Lifetime, else number of days
+
+        if (durationDays === 0) {
+            grantAccess();
+        } else {
+            let createdTime = keyData.createdTime || Date.now();
+            let currentTime = Date.now();
+            let diffDays = (currentTime - createdTime) / (1000 * 60 * 60 * 24);
+
+            if (diffDays <= durationDays) {
+                grantAccess();
+            } else {
+                err.style.color = "#ff0055";
+                err.innerText = "❌ THIS KEY HAS EXPIRED!";
+            }
+        }
     } else {
         err.style.color = "#ff0055";
-        err.innerText = "☠️ ACCESS DENIED!";
+        err.innerText = "☠️ INVALID ACCESS KEY!";
     }
+}
+
+function grantAccess() {
+    const err = document.getElementById('err');
+    err.style.color = "#00ff66";
+    err.innerText = "✔️ ACCESS GRANTED";
+    setTimeout(() => {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('ui').style.display = 'flex';
+        startEngine();
+    }, 500);
 }
 
 const drag = document.getElementById("drag");
@@ -619,7 +654,6 @@ function playSound(type) {
     } catch(e) {}
 }
 
-/* ===== HARDENED ULTRA-ACCURATE PREDICTION ENGINE ===== */
 function getSmartPrediction(list) {
     const nums = list.slice(0, 50).map(x => parseInt(x.number));
     if (nums.length < 5) return { trend: "BIG", main: 7, opp: 2, confidence: 85 };
@@ -629,7 +663,6 @@ function getSmartPrediction(list) {
 
     let bestTrend = "BIG";
 
-    // 🔴 3 Level Maximum Guarantee Logic
     if (lossStreak >= 2) {
         const lastActualSize = getSize(nums[0]);
         const lastActualColor = getColor(nums[0]);
@@ -692,7 +725,6 @@ function getSmartPrediction(list) {
     return { trend: bestTrend, main: mainPool[0], opp: oppPool[0], confidence };
 }
 
-/* ===== UPDATE TABLE (LIMIT MAX 100) ===== */
 function updateTable() {
     let h = "";
     if (sessionData.length === 0) {
@@ -767,7 +799,7 @@ function copySignal() {
                  `🗿 𝗣𝗘𝗥𝗜𝗢𝗗: ${period}\n` +
                  `🎲 𝗣𝗥𝗘𝗗𝗜𝗖𝗧𝗜𝗢𝗡: ${trend}\n` +
                  `🎯 𝗡𝗨𝗠𝗕𝗘𝗥: ${n1} / ${n2}\n\n` +
-                 `⚠️  𝟳 𝗟𝗘𝗩𝗘𝗟 𝗠𝗘𝗡𝗧𝗘𝗡 𝗔𝗟𝗟 𝗧𝗜𝗠𝗘  ⚠️ \n\n` +
+                 `⚠️️  𝟳 𝗟𝗘𝗩𝗘𝗟 𝗠𝗘𝗡𝗧𝗘𝗡 𝗔𝗟𝗟 𝗧𝗜𝗠𝗘  ⚠️ \n\n` +
                  `═══════════════════════════\n` +
                  ` ☠️ 𝗣𝗢𝗪𝗘𝗥 𝗢𝗙 𝗛𝗔𝗖𝗞: POWERED BY ANMOL SINGH\n` +
                  `═══════════════════════════`;
